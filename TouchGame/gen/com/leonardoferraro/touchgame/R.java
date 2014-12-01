@@ -14,15 +14,20 @@ public final class R {
         public static final int ic_launcher=0x7f020000;
     }
     public static final class id {
+        public static final int clear_VW=0x7f060003;
         public static final int record_TV=0x7f060001;
         public static final int time_TV=0x7f060000;
+        public static final int versione_VW=0x7f060002;
     }
     public static final class layout {
         public static final int activity_main=0x7f030000;
     }
     public static final class string {
         public static final int app_name=0x7f040000;
+        public static final int clear_VW=0x7f040004;
         public static final int hello_world=0x7f040001;
+        public static final int magnato_VW=0x7f040002;
+        public static final int standard_VW=0x7f040003;
     }
     public static final class style {
         /** 

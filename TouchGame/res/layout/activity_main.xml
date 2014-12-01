@@ -4,6 +4,10 @@
     android:layout_height="match_parent"
     tools:context="${relativePackage}.${activityClass}" >
 
+    <com.leonardoferraro.touchgame.MainView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <TextView
         android:id="@+id/time_TV"
         android:layout_width="wrap_content"
@@ -26,8 +30,23 @@
         android:text="Medium Text"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
-    <com.leonardoferraro.touchgame.MainView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    <ToggleButton
+        android:id="@+id/versione_VW"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="10dp"
+        android:text="ToggleButton"
+        android:textOff="@string/standard_VW"
+        android:textOn="@string/magnato_VW" />
+
+    <Button
+        android:id="@+id/clear_VW"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:text="@string/clear_VW" />
     
 </RelativeLayout>

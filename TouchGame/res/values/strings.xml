@@ -3,5 +3,8 @@
 
     <string name="app_name">TouchGame</string>
     <string name="hello_world">Hello world!</string>
+    <string name="magnato_VW">Versione Magnata</string>
+    <string name="standard_VW">Versione Normale</string>
+    <string name="clear_VW">Pulisci</string>
 
 </resources>
