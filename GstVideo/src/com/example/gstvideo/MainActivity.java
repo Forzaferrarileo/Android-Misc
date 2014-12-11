@@ -33,9 +33,7 @@ public class MainActivity extends Activity implements Callback {
 	private ToggleButton play_tb;
 	private SurfaceView videoSurface;
 	private SurfaceHolder sh;
-	
-    private JoystickView joystick;
-	
+		
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,9 +62,7 @@ public class MainActivity extends Activity implements Callback {
         GStreamerSurfaceView.media_height = size.y;
         
 
-        //Referencing also other views
-        joystick = (JoystickView) findViewById(R.id.MainView);
-
+ 
         
         
         play_tb = (ToggleButton) this.findViewById(R.id.play_tb);

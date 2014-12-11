@@ -14,8 +14,7 @@ public final class R {
         public static final int ic_launcher=0x7f020000;
     }
     public static final class id {
-        public static final int MainView=0x7f060002;
-        public static final int play_tb=0x7f060003;
+        public static final int play_tb=0x7f060002;
         public static final int rl_layout=0x7f060000;
         public static final int videoSurface=0x7f060001;
     }
