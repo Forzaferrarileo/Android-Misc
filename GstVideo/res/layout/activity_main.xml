@@ -11,13 +11,15 @@
         android:layout_height="fill_parent"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true" />
-    
-    <com.example.gstvideo.BallView 
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true" />
         />
+
+    
+
+    <com.example.gstvideo.BallView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true" />
 
     <ToggleButton
         android:id="@+id/play_tb"

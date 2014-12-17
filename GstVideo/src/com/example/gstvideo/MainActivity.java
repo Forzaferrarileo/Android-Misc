@@ -60,10 +60,7 @@ public class MainActivity extends Activity implements Callback {
         display.getSize(size);
         GStreamerSurfaceView.media_width = size.x;
         GStreamerSurfaceView.media_height = size.y;
-        
-
  
-        
         
         play_tb = (ToggleButton) this.findViewById(R.id.play_tb);
         play_tb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -95,7 +92,8 @@ public class MainActivity extends Activity implements Callback {
         
         play_tb.setEnabled(false);
         nativeInit();
-        
+     
+        BallView.setScreenSize(size.x , size.y);
         
     }
     

@@ -8,8 +8,8 @@ import android.view.View;
 
 // A simple SurfaceView whose width and height can be set from the outside
 public class GStreamerSurfaceView extends SurfaceView {
-    public static int media_width = 1024;
-    public static int media_height = 768;
+    public static int media_width = 1280;
+    public static int media_height = 800;
 
     // Mandatory constructors, they do not do much
     public GStreamerSurfaceView(Context context, AttributeSet attrs,

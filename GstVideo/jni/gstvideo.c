@@ -210,7 +210,9 @@ static void *app_function (void *userdata) {
 	g_main_context_push_thread_default(data->context);
 
 	/* Costruisci la pipeline */
-	data->pipeline = gst_parse_launch("udpsrc port=5000 caps=\"application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264\" ! rtph264depay ! h264parse ! decodebin ! glimagesink sync=false" , &error);
+	//data->pipeline = gst_parse_launch("udpsrc port=5000 caps=\"application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264\"  ! rtpjitterbuffer ! rtph264depay ! h264parse ! decodebin ! glimagesink " , &error);
+	data->pipeline = gst_parse_launch("udpsrc port=5000 caps=\"application/x-rtp, media=(string)video, encoding-name=(string)H264\" ! rtpjitterbuffer ! rtph264depay ! h264parse ! decodebin ! glimagesink " , &error);
+
 	if (error) {
 		gchar *message = g_strdup_printf("Impossibile costruire la pipeline: %s", error->message);
 		g_clear_error (&error);
