@@ -146,194 +146,144 @@ static void *app_function (void *userdata) {
   bus_source = gst_bus_create_watch (bus);															//Crea un watchdog per il bus
   g_source_set_callback (bus_source, (GSourceFunc) gst_bus_async_signal_func, NULL, NULL);			//Imposta una callback passandogli il watchdog e la funzione da eseguire
   g_source_attach (bus_source, data->context);														//Collega il bus e il contesto salvato in data
-  g_source_unref (bus_source);
-  g_signal_connect (G_OBJECT (bus), "message::error", (GCallback)error_cb, data);
-  g_signal_connect (G_OBJECT (bus), "message::state-changed", (GCallback)state_changed_cb, data);
-  gst_object_unref (bus);
+  g_source_unref (bus_source);																		//Diminuisce di 1 il contatore del riferimento , se questo arriva a 0 il bus viene eliminato
+  g_signal_connect (G_OBJECT (bus), "message::error", (GCallback)error_cb, data);					//Connetti i messaggi di errore alla funzione error_cb , e gli si passa data
+  g_signal_connect (G_OBJECT (bus), "message::state-changed", (GCallback)state_changed_cb, data);	//Connetti i cambiamenti di stato alla funzione state_changed , e gli si passa data
+  gst_object_unref (bus);																			//Diminuisce il contatore del riferimento a bus di 1 , e se arriva a zero distrugge bus
 
-  /* Create a GLib Main Loop and set it to run */
-  GST_DEBUG ("Entering main loop... (CustomData:%p)", data);
-  data->main_loop = g_main_loop_new (data->context, FALSE);
-  check_initialization_complete (data);
-  g_main_loop_run (data->main_loop);
-  GST_DEBUG ("Exited main loop");
-  g_main_loop_unref (data->main_loop);
-  data->main_loop = NULL;
+  /* Crea un loop di Glib e inizializzalo */
+  GST_DEBUG ("Entering main loop... (CustomData:%p)", data);	//DEBUG
+  data->main_loop = g_main_loop_new (data->context, FALSE);		//Crea il loop passandogli il contesto , e salvando un puntatore al loop dentro data
+  check_initialization_complete (data);							//Controlla se è stato inizializzato . La funzione è definita in questo codice
+  g_main_loop_run (data->main_loop);							//Inizializza il loop
+  GST_DEBUG ("Exited main loop");								//DEBUG
+  g_main_loop_unref (data->main_loop);							//Diminuisci di 1 il contatore del riferimento al loop , e se questo è 0 distruggilo. Questa funzione si attiva se gstreamer ritorna un errore
+  data->main_loop = NULL;										//Azzdera il riferimento al loop in data
 
-  /* Free resources */
-  g_main_context_pop_thread_default(data->context);
-  g_main_context_unref (data->context);
-  gst_element_set_state (data->pipeline, GST_STATE_NULL);
-  gst_object_unref (data->pipeline);
+  /* Pulisci la memopria */
+  g_main_context_pop_thread_default(data->context);				//Rimuovi questo thread come quello di default
+  g_main_context_unref (data->context);							//Diminuisci il riferimento al contesto di 1. se questo diventa 0 distruggilo
+  gst_element_set_state (data->pipeline, GST_STATE_NULL);		//Azzera la pipeline
+  gst_object_unref (data->pipeline);			Set pipeline to PAUSED state				//Diminuisce il riferimento alla pipeline di 1 , se questo diventa 0 distruggilo
 
   return NULL;
 }
 
 
-/* Register this thread with the VM */
+/* 	Registra questo thread con la macchina virtuale
+ *	Per permettere il passaggio di dati tra un thread nativo ed un altro nella vm
+ */
 static JNIEnv *attach_current_thread (void) {
   JNIEnv *env;
   JavaVMAttachArgs args;
 
-  GST_DEBUG ("Attaching thread %p", g_thread_self ());
-  args.version = JNI_VERSION_1_4;
+  GST_DEBUG ("Attaching thread %p", g_thread_self ());	//DEBUG
+  args.version = JNI_VERSION_1_4;						//Specifica la versione di jni da usare
   args.name = NULL;
   args.group = NULL;
 
-  if ((*java_vm)->AttachCurrentThread (java_vm, &env, &args) < 0) {
-    GST_ERROR ("Failed to attach current thread");
-    return NULL;
+  if ((*java_vm)->AttachCurrentThread (java_vm, &env, &args) < 0) {		//Prova a collegare il thread
+    GST_ERROR ("Failed to attach current thread");						//DEBUG
+    return NULL;														//Termina l'esecuzione se fallisce
   }
 
-  return env;
+  return env;															//Ritorna il puntatore all'ambiente jni
 }
 
-/* Unregister this thread from the VM */
+/* Scollega il thread dalla VM */
 static void detach_current_thread (void *env) {
-  GST_DEBUG ("Detaching thread %p", g_thread_self ());
-  (*java_vm)->DetachCurrentThread (java_vm);
+  GST_DEBUG ("Detaching thread %p", g_thread_self ());		//DEBUG
+  (*java_vm)->DetachCurrentThread (java_vm);				//Scollega il thread usando la funzione DetachCurrentThread
 }
 
-/* Retrieve the JNI environment for this thread */
+/* Restituisce l'ambiente jni per questo thread */
 static JNIEnv *get_jni_env (void) {
   JNIEnv *env;
 
-  if ((env = pthread_getspecific (current_jni_env)) == NULL) {
-    env = attach_current_thread ();
-    pthread_setspecific (current_jni_env, env);
+  if ((env = pthread_getspecific (current_jni_env)) == NULL) {	//se questo thread non è collegato alla VM (jni)
+    env = attach_current_thread ();								//Collega il thread
+    pthread_setspecific (current_jni_env, env);					//Collega l'ambiente(env) alla chiave del thread(current_jni_env)
   }
 
-  return env;
+  return env;													//la funzione ritorna l'ambiente
 }
 
-/* Change the content of the UI's TextView */
+/* Cambia il contenuto della TextView */
 static void set_ui_message (const gchar *message, CustomData *data) {
-  JNIEnv *env = get_jni_env ();
-  GST_DEBUG ("Setting message to: %s", message);
-  jstring jmessage = (*env)->NewStringUTF(env, message);
-  (*env)->CallVoidMethod (env, data->app, set_message_method_id, jmessage);
-  if ((*env)->ExceptionCheck (env)) {
-    GST_ERROR ("Failed to call Java method");
-    (*env)->ExceptionClear (env);
+  JNIEnv *env = get_jni_env ();												//Puntatore al nostro ambiente nativo
+  GST_DEBUG ("Setting message to: %s", message);							//DEBUG
+  jstring jmessage = (*env)->NewStringUTF(env, message);					//Converti la stringa message in una stringa java
+  (*env)->CallVoidMethod (env, data->app, set_message_method_id, jmessage);	//chiama la funzione java , passandogli l'ambiente , l'istanza dell'app , l'id del metodo java , e la stringa
+  if ((*env)->ExceptionCheck (env)) {										//Se l'ambiente ritorna un'eccezione
+    GST_ERROR ("Failed to call Java method");								//DEBUG
+    (*env)->ExceptionClear (env);											//Azzera le eccezioni
   }
-  (*env)->DeleteLocalRef (env, jmessage);
+  (*env)->DeleteLocalRef (env, jmessage);									//Elimina il riferimento locale all'ambiente e al messaggio
 }
 
-/* Retrieve errors from the bus and show them on the UI */
+/* Restituisci gli errori dal bus e scrivili enlla TextView */
 static void error_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   GError *err;
   gchar *debug_info;
   gchar *message_string;
 
   gst_message_parse_error (msg, &err, &debug_info);
-  message_string = g_strdup_printf ("Error received from element %s: %s", GST_OBJECT_NAME (msg->src), err->message);
-  g_clear_error (&err);
-  g_free (debug_info);
-  set_ui_message (message_string, data);
-  g_free (message_string);
-  gst_element_set_state (data->pipeline, GST_STATE_NULL);
+  message_string = g_strdup_printf ("Error received from element %s: %s", GST_OBJECT_NAME (msg->src), err->message);	//Costruisci il messaggio di errore con le varie info
+  g_clear_error (&err);																									//Azzera err
+  g_free (debug_info);																									//Elimina l'allocazione di memoria per dbug_info
+  set_ui_message (message_string, data);																				//Scrivi il messaggio nella TextView
+  g_free (message_string);																								//Elimina l'allocazione di memoria per il messaggio mandato
+  gst_element_set_state (data->pipeline, GST_STATE_NULL);																//Azzera la pipeline
 }
 
-/* Notify UI about pipeline state changes */
+/* Notifica l'interfaccia circa i cambiamenti di stato */
 static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   GstState old_state, new_state, pending_state;
-  gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-  /* Only pay attention to messages coming from the pipeline, not its children */
+  gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);						//Funzione di gstreamer che rileva il cambiamento di stato
+  /* Fai attenzione solo ai messaggi dalla pipeline , e non da quelli che ne derivano */
   if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
-    gchar *message = g_strdup_printf("State changed to %s", gst_element_state_get_name(new_state));
-    set_ui_message(message, data);
-    g_free (message);
+    gchar *message = g_strdup_printf("State changed to %s", gst_element_state_get_name(new_state));		//Costruisci il messaggio e salvalo in suo puntatore
+    set_ui_message(message, data);																		//Scrivi nella TextView il messaggio
+    g_free (message);																					//Elimina la memoria allocata per il messaggio
   }
 }
 
-/* Check if all conditions are met to report GStreamer as initialized.
- * These conditions will change depending on the application */
+/* Controlla se le condizioni per cui gstreamer è inizializzato coincidono
+ * Queste condizioni posso cambiare a seconda dell'app */
 static void check_initialization_complete (CustomData *data) {
-  JNIEnv *env = get_jni_env ();
-  if (!data->initialized && data->main_loop) {
-    GST_DEBUG ("Initialization complete, notifying application. main_loop:%p", data->main_loop);
-    (*env)->CallVoidMethod (env, data->app, on_gstreamer_initialized_method_id);
-    if ((*env)->ExceptionCheck (env)) {
-      GST_ERROR ("Failed to call Java method");
-      (*env)->ExceptionClear (env);
+  JNIEnv *env = get_jni_env ();																		//Restituisci l'ambiente
+  if (!data->initialized && data->main_loop) {														//Se il loop è in esecuzione è la variabile in data è falsa
+    GST_DEBUG ("Initialization complete, notifying application. main_loop:%p", data->main_loop);	//DEBUG
+    (*env)->CallVoidMethod (env, data->app, on_gstreamer_initialized_method_id);					//Notifica che  l'esecuzione è in corso
+    if ((*env)->ExceptionCheck (env)) {																//Se l'ambiente restituisce eccezioni
+      GST_ERROR ("Failed to call Java method");														//DEBUG
+      (*env)->ExceptionClear (env);																	//Azzera le eccezioni
     }
-    data->initialized = TRUE;
+    data->initialized = TRUE;																		//Imposta il campo di data in vero
   }
-}
-
-/* Main method for the native code. This is executed on its own thread. */
-static void *app_function (void *userdata) {
-  JavaVMAttachArgs args;
-  GstBus *bus;
-  CustomData *data = (CustomData *)userdata;
-  GSource *bus_source;
-  GError *error = NULL;
-
-  GST_DEBUG ("Creating pipeline in CustomData at %p", data);
-
-  /* Create our own GLib Main Context and make it the default one */
-  data->context = g_main_context_new ();
-  g_main_context_push_thread_default(data->context);
-
-  /* Build pipeline */
-  data->pipeline = gst_parse_launch("audiotestsrc ! audioconvert ! audioresample ! autoaudiosink", &error);
-  if (error) {
-    gchar *message = g_strdup_printf("Unable to build pipeline: %s", error->message);
-    g_clear_error (&error);
-    set_ui_message(message, data);
-    g_free (message);
-    return NULL;
-  }
-
-  /* Instruct the bus to emit signals for each received message, and connect to the interesting signals */
-  bus = gst_element_get_bus (data->pipeline);
-  bus_source = gst_bus_create_watch (bus);
-  g_source_set_callback (bus_source, (GSourceFunc) gst_bus_async_signal_func, NULL, NULL);
-  g_source_attach (bus_source, data->context);
-  g_source_unref (bus_source);
-  g_signal_connect (G_OBJECT (bus), "message::error", (GCallback)error_cb, data);
-  g_signal_connect (G_OBJECT (bus), "message::state-changed", (GCallback)state_changed_cb, data);
-  gst_object_unref (bus);
-
-  /* Create a GLib Main Loop and set it to run */
-  GST_DEBUG ("Entering main loop... (CustomData:%p)", data);
-  data->main_loop = g_main_loop_new (data->context, FALSE);
-  check_initialization_complete (data);
-  g_main_loop_run (data->main_loop);
-  GST_DEBUG ("Exited main loop");
-  g_main_loop_unref (data->main_loop);
-  data->main_loop = NULL;
-
-  /* Free resources */
-  g_main_context_pop_thread_default(data->context);
-  g_main_context_unref (data->context);
-  gst_element_set_state (data->pipeline, GST_STATE_NULL);
-  gst_object_unref (data->pipeline);
-
-  return NULL;
 }
 
 /*
- * Java Bindings
+ * Collegamenti al Java
  */
 
-/* Quit the main loop, remove the native thread and free resources */
+/* Esci dal loop , termina il thread e pulisci le risorse */
 static void gst_native_finalize (JNIEnv* env, jobject thiz) {
-  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-  if (!data) return;
-  GST_DEBUG ("Quitting main loop...");
-  g_main_loop_quit (data->main_loop);
-  GST_DEBUG ("Waiting for thread to finish...");
-  pthread_join (gst_app_thread, NULL);
-  GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
-  (*env)->DeleteGlobalRef (env, data->app);
-  GST_DEBUG ("Freeing CustomData at %p", data);
-  g_free (data);
-  SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
-  GST_DEBUG ("Done finalizing");
+  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);		//Puntatore a data
+  if (!data) return;														//Se la struttura è inesistente chiudi l'app
+  GST_DEBUG ("Quitting main loop...");										//DEBUG
+  g_main_loop_quit (data->main_loop);										//Esci dal loop
+  GST_DEBUG ("Waiting for thread to finish...");							//DEBUG
+  pthread_join (gst_app_thread, NULL);										//Unisciti al thread
+  GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);			//DEBUG
+  (*env)->DeleteGlobalRef (env, data->app);									//Elimina il riferimento globale all'istanza
+  GST_DEBUG ("Freeing CustomData at %p", data);								//DEBUG
+  g_free (data);															//Pulisci la memoria allocata per data
+  SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);					//Azzera il puntatore a data
+  GST_DEBUG ("Done finalizing");											//DEBUG
 }
 
-/* Set pipeline to PLAYING state */
+/* Imposta la pipeline in riproduzione */
 static void gst_native_play (JNIEnv* env, jobject thiz) {
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data) return;
@@ -341,7 +291,7 @@ static void gst_native_play (JNIEnv* env, jobject thiz) {
   gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
 }
 
-/* Set pipeline to PAUSED state */
+/* Imposta la pipeline in pausa */
 static void gst_native_pause (JNIEnv* env, jobject thiz) {
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data) return;
