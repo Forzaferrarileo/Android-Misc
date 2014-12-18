@@ -13,14 +13,10 @@
         android:layout_centerVertical="true" />
         />
 
-    
-
     <com.example.gstvideo.BallView
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true" />
-
+        android:layout_height="wrap_content" />
+    
     <ToggleButton
         android:id="@+id/play_tb"
         android:layout_width="wrap_content"
@@ -31,4 +27,40 @@
         android:textOff="@string/pause_tb"
         android:textOn="@string/play_tb" />
 
+    <ImageButton
+        android:id="@+id/leftButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/downButton"
+        android:layout_toLeftOf="@+id/downButton"
+        android:background="#0000"
+        android:src="@drawable/ic_left" />
+
+    <ImageButton
+        android:id="@+id/downButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toLeftOf="@+id/rightButton"
+        android:background="#0000"
+        android:src="@drawable/ic_down" />
+
+    <ImageButton
+        android:id="@+id/rightButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/downButton"
+        android:layout_alignParentRight="true"
+        android:background="#0000"
+        android:src="@drawable/ic_right" />
+
+    <ImageButton
+        android:id="@+id/upButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/leftButton"
+        android:layout_toRightOf="@+id/leftButton"
+        android:background="#0000"
+        android:src="@drawable/ic_up" />
+    
 </RelativeLayout>
