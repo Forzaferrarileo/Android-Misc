@@ -32,8 +32,7 @@ public class MainActivity extends Activity implements Callback {
 	
 	private ToggleButton play_tb;
 	private SurfaceView videoSurface;
-	private SurfaceHolder sh;
-		
+	private SurfaceHolder sh;		
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +60,8 @@ public class MainActivity extends Activity implements Callback {
         GStreamerSurfaceView.media_width = size.x;
         GStreamerSurfaceView.media_height = size.y;
  
+        socketThread.startThread();
+        
         
         play_tb = (ToggleButton) this.findViewById(R.id.play_tb);
         play_tb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -120,7 +121,7 @@ public class MainActivity extends Activity implements Callback {
                 play_tb.setEnabled(true);
             }
         });
-    }
+    }   
     
     static {
         System.loadLibrary("gstreamer_android");

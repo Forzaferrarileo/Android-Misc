@@ -13,14 +13,16 @@ public class BallView extends View {
 
 	private Paint joystickBase;
 	private Paint joystickPad;
-	private static int[] posX = new int[2];	
-	private static int[] posY = new int[2];
+	public static int[] posX = new int[2];	
+	public static int[] posY = new int[2];
 	
 	private static int[] baseX = new int[2];
 	private static int[] baseY = new int[2];
 
 	
 	private boolean staPremendo;
+	public static boolean iamDrawn;
+
 
 	private static int rBase , rPad , r , width;
 	
@@ -93,7 +95,7 @@ public class BallView extends View {
 		  
 	@Override
 	protected void onDraw(Canvas canvas) {
-
+		
 		if(!staPremendo){
 			posX[0] = baseX[0];
 			posY[0] = baseY[0];
@@ -102,14 +104,17 @@ public class BallView extends View {
 		canvas.drawCircle(baseX[0], baseY[0], rBase , joystickBase);
 		canvas.drawCircle(posX[0], posY[0], rPad , joystickPad);
 		super.onDraw(canvas);
+		if(!iamDrawn){
+			iamDrawn = true;
+		}
 	}
 	
 	public static void setScreenSize(int width, int height){
 		
 		BallView.width = width;
 		baseX[0] = width / 6 ;
-		baseY[0] = height - ( height / 6 );
-		rBase = width / 12 ;
+		baseY[0] = height - ( height / 5 );
+		rBase = width / 10 ;
 		rPad = rBase * 70 / 100;
 		
 	}
