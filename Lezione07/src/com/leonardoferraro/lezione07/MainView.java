@@ -20,9 +20,12 @@ public class MainView extends View implements SensorEventListener {
 	
 	private SensorManager   mSensorManager;
 	private Sensor 			mSensor;
+	private Sensor			mSensorLight;
 	
-	private int screenHeight , screenWidth;
 	private int quadDim;
+	private float light = 0;
+	private float lightMax = 0;
+	private int c;
 	
 	private boolean isFirst = true;
 	
@@ -35,11 +38,14 @@ public class MainView extends View implements SensorEventListener {
 		paint.setAntiAlias(false);
 		paint.setStrokeWidth(6f);
 		paint.setStyle(Paint.Style.FILL_AND_STROKE);
-		paint.setColor(Color.CYAN);		
+		paint.setColor(Color.BLACK);		
 		
 		mSensorManager = (SensorManager) this.getContext().getSystemService(Context.SENSOR_SERVICE);
-		mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
-		mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_UI);
+		mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		mSensorLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+		mSensorManager.registerListener(this, mSensor, SensorManager.SENSOR_DELAY_GAME);
+		mSensorManager.registerListener(this, mSensorLight, SensorManager.SENSOR_DELAY_GAME);
+
 		
 		gravity = new float[3];
 		linear_acceleration = new float[3];
@@ -53,6 +59,9 @@ public class MainView extends View implements SensorEventListener {
 		firstY = this.getHeight()/2;
 		
 		quadDim = this.getWidth()/8;
+		
+		c = (int) ((light * 255)/lightMax) ;
+		paint.setARGB(255, c, c, c);
 		
 		if(isFirst){
 			canvas.drawRect(firstX-quadDim, firstY-quadDim, firstX+quadDim, firstY+quadDim, paint);
@@ -85,7 +94,6 @@ public class MainView extends View implements SensorEventListener {
 			
 		}
 				
-		invalidate();
 		return true;
 		
 	}//onTouchEvent
@@ -100,25 +108,39 @@ public class MainView extends View implements SensorEventListener {
 	@Override
 	public void onSensorChanged(SensorEvent arg0) {
 		
-		  final float alpha = 0.8f;
+		Sensor sensor = arg0.sensor;
+		
+		if(sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+		
+			final float alpha = 0.8f;
 
-		  // Isolate the force of gravity with the low-pass filter.
-		  gravity[0] = alpha * gravity[0] + (1 - alpha) * arg0.values[0];
-		  gravity[1] = alpha * gravity[1] + (1 - alpha) * arg0.values[1];
-		  gravity[2] = alpha * gravity[2] + (1 - alpha) * arg0.values[2];
+			// Isolate the force of gravity with the low-pass filter.
+			gravity[0] = alpha * gravity[0] + (1 - alpha) * arg0.values[0];
+			gravity[1] = alpha * gravity[1] + (1 - alpha) * arg0.values[1];
+			gravity[2] = alpha * gravity[2] + (1 - alpha) * arg0.values[2];
 
-		  // Remove the gravity contribution with the high-pass filter.
-		  linear_acceleration[0] = arg0.values[0] - gravity[0];
-		  linear_acceleration[1] = arg0.values[1] - gravity[1];
-		  linear_acceleration[2] = arg0.values[2] - gravity[2];
+			// Remove the gravity contribution with the high-pass filter.
+			linear_acceleration[0] = arg0.values[0] - gravity[0];
+			linear_acceleration[1] = arg0.values[1] - gravity[1];
+			linear_acceleration[2] = arg0.values[2] - gravity[2];
 		  		  
-		  rX = firstX - (linear_acceleration[0]*50);
-		  rY = firstY + (linear_acceleration[1]*50);
-		  
-		  invalidate();
+			rX = firstX - (linear_acceleration[0]*100);
+			rY = firstY + (linear_acceleration[1]*100);
+		
+		}
+		else if(sensor.getType() == Sensor.TYPE_LIGHT){
+			
+			light = arg0.values[0];
+			
+			if(light > lightMax){
+				
+				lightMax = light;
+				
+			}
+		}
+		
 		
 	}//onSensorChanged
-	
 	
 
 }//MainView classe
